@@ -10,6 +10,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { HomePageComponent } from './home-page/home-page.component';
 import { HelloWorldGameComponent } from './games/hello-world-game/hello-world-game.component';
+import { HttpClientModule } from  '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -24,6 +25,7 @@ import { HelloWorldGameComponent } from './games/hello-world-game/hello-world-ga
     CollapseModule.forRoot(),
     BsDropdownModule.forRoot(),
     ProgressbarModule.forRoot(),
+    HttpClientModule
   ],
   providers: [],
   bootstrap: [AppComponent]

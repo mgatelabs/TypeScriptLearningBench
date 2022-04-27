@@ -25,9 +25,17 @@ export enum WorldTiles {
     wall_top_4,
     wall_bottom_left_1,
     wall_bottom_right_1,
+
+    wall_cap_left_1,
+    wall_cap_left_2,
+    wall_cap_right_1,
+    wall_cap_right_2,
+
     wall_bottom_1,
     wall_bottom_2,
     wall_bottom_3,
     wall_bottom_4,
+    wall_bottom_5,
+    wall_bottom_6,
     space_void
 }

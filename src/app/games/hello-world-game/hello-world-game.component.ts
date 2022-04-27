@@ -1,9 +1,13 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { AfterViewInit, Component, ElementRef, Injectable, OnInit, ViewChild } from '@angular/core';
 import { WorldMap } from 'src/app/shared/world-map';
 import { WorldTiles } from 'src/app/shared/world-tiles';
 
 import * as THREE from 'three';
 
+@Injectable({
+  providedIn:  'root'
+  })
 @Component({
   selector: 'app-hello-world-game',
   templateUrl: './hello-world-game.component.html',
@@ -23,7 +27,7 @@ export class HelloWorldGameComponent implements OnInit, AfterViewInit {
     return this.canvasRef.nativeElement;
   }
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
   }
@@ -142,19 +146,96 @@ private loadTextures() {
     this.tilesetLookup.set(WorldTiles.wall_bottom_4, this.buildTileSetTexture(44));
     this.tilesetLookup.set(WorldTiles.wall_bottom_right_1,this.buildTileSetTexture(45));
 
+    // Row 6
+    this.tilesetLookup.set(WorldTiles.wall_cap_left_1, this.buildTileSetTexture(50));
+    this.tilesetLookup.set(WorldTiles.wall_bottom_5, this.buildTileSetTexture(51));
+    this.tilesetLookup.set(WorldTiles.wall_bottom_6, this.buildTileSetTexture(52));
+    this.tilesetLookup.set(WorldTiles.wall_cap_right_1, this.buildTileSetTexture(53));
+    this.tilesetLookup.set(WorldTiles.wall_cap_left_2, this.buildTileSetTexture(54));
+    this.tilesetLookup.set(WorldTiles.wall_cap_right_2,this.buildTileSetTexture(55));
+
     this.tilesetLookup.set(WorldTiles.space_void,this.buildTileSetTexture(79));
 
-    this.map = new WorldMap(10,10);
-
+    this.map = new WorldMap(0,1);
     let m = this.map!;
 
-    m.world[5][5].tile = WorldTiles.floor1;
-    m.world[5][6].tile = WorldTiles.floor2;
-    m.world[4][5].tile = WorldTiles.floor3;
-    m.world[4][6].tile = WorldTiles.floor4;
+    this.http.get('assets/maps/001.csv', { responseType: 'text'}).subscribe(data => {
+      const lines = data.split("\n");
 
-    this.createScene();
-    this.createRenderer();
+      var addLine = false;
+      for (var y= lines.length - 1; y >= 0; y--) {
+        var line = lines[y];
+        line = line.trim();
+
+        if (line.length == 0) {
+          continue;
+        }
+
+        if (addLine) {
+          m.addRow();
+        } else {
+          addLine = true;
+        }
+        const pieces = line.split(',');
+        for (const p of pieces) {
+          const tile = m.addTile();
+          console.log(p);
+          if (p === 'X') {
+            tile.tile = WorldTiles.wall_top_1;
+            tile.wall = true;
+          } else{ 
+            tile.tile = WorldTiles.floor1;
+          }
+        }
+      }
+
+
+      for (let y = 0; y < m.height; y++) {
+        for (let x = 0; x < m.width; x++) {  
+          let tile = m.world[y][x];
+          if (tile.wall === true) {         
+            const tl = m.isWall(x - 1, y + 1);
+            const t = m.isWall(x, y + 1);
+            const tr = m.isWall(x + 1, y + 1);
+
+            const l = m.isWall(x - 1, y);
+            const c = m.isWall(x, y);
+            const r = m.isWall(x + 1, y);
+
+            const bl = m.isWall(x - 1, y - 1);
+            const b = m.isWall(x, y - 1);
+            const br = m.isWall(x + 1, y - 1);
+
+            if (tl && t && tr && l && r && bl && b && br) {
+              tile.tile = WorldTiles.space_void;
+            } else if (!l && r && t && b) {
+              tile.tile = WorldTiles.wall_right_1;
+            } else if (l && !r && t && b) {
+              tile.tile = WorldTiles.wall_left_2;
+            } else if (l && r && t && b && !br) {
+              tile.tile = WorldTiles.wall_left_1;
+            } else if (l && r && t && b && !tr) {
+              tile.tile = WorldTiles.wall_bottom_left_1;
+            } else if (l && r && t && b && !tl) {
+              tile.tile = WorldTiles.wall_bottom_right_1;
+            } else if (l && r && !t && b) {
+              tile.tile = WorldTiles.wall_bottom_1;
+            } else if (l && !r && !t && !tr && b) {
+              tile.tile = WorldTiles.wall_cap_right_1;
+            } else if (!l && r && !t && !tl && b) {
+              tile.tile = WorldTiles.wall_cap_left_1;
+            } else if (l && r && t && b && !bl) {
+              tile.tile = WorldTiles.wall_right_1;
+            }
+          }
+        }
+      }
+
+      this.createScene();
+      this.createRenderer();
+    });
+
+    
     //this.createInteractionManager();
     //this.addInteraction();
     //this.update(0);
@@ -189,52 +270,13 @@ private loadTextures() {
         }
 
         const plane = new THREE.Mesh( this.planeGeometry, this.tilesetLookup.get(tile.tile));
-        plane.position.x = x * 64;
-        plane.position.y = y * 64;
+        plane.position.x = (x * 64) + 32;
+        plane.position.y = (y * 64) + 32;
         plane.position.z = 0;
   
         this.scene.add( plane );
-
       }
     }
-
-    /*
-    {
-      const plane = new THREE.Mesh( this.planeGeometry, this.tilesetLookup.get(WorldTiles.wall_left_1));
-      plane.position.x = 400;
-      plane.position.y = 300;
-      plane.position.z = 0;
-
-      this.scene.add( plane );
-    }
-
-    {
-      const plane = new THREE.Mesh( this.planeGeometry, this.tilesetLookup.get(WorldTiles.wall_top_3));
-      plane.position.x = 400 + 64;
-      plane.position.y = 300;
-      plane.position.z = 0;
-
-      this.scene.add( plane );
-    }
-
-    {
-      const plane = new THREE.Mesh( this.planeGeometry, this.tilesetLookup.get(WorldTiles.wall_right_2));
-      plane.position.x = 400 + 128;
-      plane.position.y = 300;
-      plane.position.z = 0;
-
-      this.scene.add( plane );
-    }
-
-    {
-      const plane = new THREE.Mesh( this.planeGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      plane.position.x = 0;
-      plane.position.y = 0;
-      plane.position.z = 0;
-  
-      //this.scene.add( plane );
-    }
-    */
 
   }
 
@@ -245,7 +287,7 @@ private loadTextures() {
       alpha: false,
     });
     this.renderer.setPixelRatio(1);
-    this.renderer.setClearColor(0x000000, 1);
+    this.renderer.setClearColor(0x24131A, 1);
 
     //var sizes = this.getCanvasSize();
     this.renderer.setSize(800, 600);
